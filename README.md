@@ -19,7 +19,7 @@
 | --- | ---: | ---: | --- |
 | 1 | 46 | 46 | 학습·Hold-out |
 | 2 | 47 | 39 | 최종 평가 |
-| 3 | 46 | 44 | 추가 평가 가능 |
+| 3 | 46 | 44 | EDA |
 
 ## 파일 구조
 
@@ -53,7 +53,7 @@ python/
 └── README.md
 ```
 
-학습 파일은 모델을 .pkl로 저장하고, evaluate.py는 저장된 모델들을 불러와 평가한다. 셀별 예측값 CSV와 별도 Markdown 리포트는 생성하지 않는다.
+학습 파일은 모델을 .pkl로 저장하고, evaluate.py는 저장된 모델들을 불러와 평가한다.
 
 ## 환경 설정
 
@@ -153,7 +153,7 @@ Batch별 수명과의 Pearson 상관계수 절댓값이 가장 큰 피쳐는 Bat
 
 ### 모델 선택 및 근거
 
-Batch 2에서 평가한 결과를 기준으로 상위 5개 설정을 정리했다. 같은 모델도 하이퍼파라미터가 다르면 별도 설정으로 포함했다. 이 순위는 테스트 결과 비교이며, 튜닝 설정은 Batch 1의 프로토콜별 5-fold CV로 선택했다.
+튜닝 설정은 Batch 1의 프로토콜별 5-fold CV로 선택했다. 아래 결과는 Batch 2 MAPE 순이며, 하이퍼파라미터가 다른 설정을 별도로 비교했다.
 
 | 모델 / 설정 | 비교한 이유와 결과 |
 | --- | --- |
@@ -167,9 +167,9 @@ Batch 2에서 평가한 결과를 기준으로 상위 5개 설정을 정리했�
 
 단독 모델 9개에서 파라미터를 하나씩 바꾸며 총 135개 설정을 비교했다. 트리 수는 50~1,200개, 부스팅 반복 수는 최대 1,600회까지 확인했다. SVR은 최적화 반복 제한도 비교하고, 수렴하지 않은 설정은 선택에서 제외했다. 이후 평균 앙상블과 스태킹 9개 조합을 비교했다. 스태킹은 내부 CV에서도 충전 프로토콜을 분리하고, 교차검증 예측값을 Ridge로 다시 학습했다.
 
-CatBoost는 별도로 기존 설정을 포함한 61개 조합을 비교했다. 반복 횟수 200~1,500회, 깊이 2~8, 학습률 0.01~0.1, 규제 강도 1~30 범위에서 조합을 추출했다. CV 오차는 줄었지만 Batch 2 성능은 기존보다 떨어져 상위 5개에는 포함되지 않았다.
+CatBoost는 별도로 기존 설정을 포함한 61개 조합을 비교했다. 반복 횟수 200~1,500회, 깊이 2~8, 학습률 0.01~0.1, 규제 강도 1~30 범위에서 조합을 추출했다. CV MAPE는 8.39%에서 7.67%로 감소했고, Batch 2 MAPE는 51.58%에서 57.13%로 증가했다.
 
-현재 전체 탐색에서 CV 오차가 가장 낮은 설정은 SVR이며, Batch 2 오차가 가장 낮은 설정은 Gradient Boosting 300회이다. 반복 횟수를 늘리거나 여러 모델을 합친다고 오차가 계속 줄어들지는 않았다. 추가 실험의 설정은 기존 학습 코드와 저장 모델에 적용하지 않았다.
+현재 전체 탐색에서 CV 오차가 가장 낮은 설정은 SVR이며, Batch 2 오차가 가장 낮은 설정은 Gradient Boosting 300회이다. 반복 횟수를 늘리거나 여러 모델을 합친다고 오차가 계속 줄어들지는 않았다.
 
 ## 성능 결과
 
@@ -183,9 +183,9 @@ MAPE는 실제 수명 대비 절대 백분율 오차의 평균으로, 낮을수�
 | 4 | Gradient Boosting + LightGBM 평균 | 8.52 | 7.60 | 33.71 | +24.61 |
 | 5 | Gradient Boosting — 200회 | 8.42 | 6.49 | 34.45 | +25.35 |
 
-Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단위는 %p이다. Target은 과제에서 제시한 원논문 기준 9.1%를 사용했다.
+Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단위는 %p이다. Target은 원논문 기준 9.1%를 사용했다.
 
-논문의 데이터 정리와 train/test 분리는 이번 Batch 1 → Batch 2 구성과 다르므로, Gap은 과제 Target과의 비교이다. [원논문](https://www.nature.com/articles/s41560-019-0356-8), [저자 데이터 처리 코드](https://github.com/rdbraatz/data-driven-prediction-of-battery-cycle-life-before-capacity-degradation/blob/master/LoadData.m)
+논문의 데이터 정리와 train/test 분리는 이번 Batch 1 → Batch 2 구성과 다르므로, Gap은 논문 수치와의 비교이다. [원논문](https://www.nature.com/articles/s41560-019-0356-8), [저자 데이터 처리 코드](https://github.com/rdbraatz/data-driven-prediction-of-battery-cycle-life-before-capacity-degradation/blob/master/LoadData.m)
 
 ### Gradient Boosting — 300회
 
@@ -196,8 +196,8 @@ Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단�
 | Train (Batch 1 CV) | 8.44 | 프로토콜별 5-fold CV 평균 |
 | Valid (Batch 1 Hold-out) | 6.61 | 학습에 사용하지 않은 셀·프로토콜 |
 | Test (Batch 2) | 32.67 | Batch 2 평가 |
-| Gap (Train-Valid) | -1.83 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +26.05 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Train-Valid) | -1.83 | Valid − Train |
+| Gap (Valid-Test) | +26.05 | Test − Valid |
 | Gap (Target-Test) | +23.57 | Target: 원논문 9.1% |
 
 ### LightGBM — 200회
@@ -209,8 +209,8 @@ Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단�
 | Train (Batch 1 CV) | 9.48 | 프로토콜별 5-fold CV 평균 |
 | Valid (Batch 1 Hold-out) | 9.79 | 학습에 사용하지 않은 셀·프로토콜 |
 | Test (Batch 2) | 32.97 | Batch 2 평가 |
-| Gap (Train-Valid) | +0.32 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +23.18 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Train-Valid) | +0.32 | Valid − Train |
+| Gap (Valid-Test) | +23.18 | Test − Valid |
 | Gap (Target-Test) | +23.87 | Target: 원논문 9.1% |
 
 ### LightGBM — 300회
@@ -222,8 +222,8 @@ Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단�
 | Train (Batch 1 CV) | 9.48 | 프로토콜별 5-fold CV 평균 |
 | Valid (Batch 1 Hold-out) | 9.79 | 학습에 사용하지 않은 셀·프로토콜 |
 | Test (Batch 2) | 32.97 | Batch 2 평가 |
-| Gap (Train-Valid) | +0.32 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +23.18 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Train-Valid) | +0.32 | Valid − Train |
+| Gap (Valid-Test) | +23.18 | Test − Valid |
 | Gap (Target-Test) | +23.87 | Target: 원논문 9.1% |
 
 ### Gradient Boosting + LightGBM 평균
@@ -235,8 +235,8 @@ Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단�
 | Train (Batch 1 CV) | 8.52 | 프로토콜별 5-fold CV 평균 |
 | Valid (Batch 1 Hold-out) | 7.60 | 학습에 사용하지 않은 셀·프로토콜 |
 | Test (Batch 2) | 33.71 | Batch 2 평가 |
-| Gap (Train-Valid) | -0.92 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +26.11 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Train-Valid) | -0.92 | Valid − Train |
+| Gap (Valid-Test) | +26.11 | Test − Valid |
 | Gap (Target-Test) | +24.61 | Target: 원논문 9.1% |
 
 ### Gradient Boosting — 200회
@@ -248,8 +248,8 @@ Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단�
 | Train (Batch 1 CV) | 8.42 | 프로토콜별 5-fold CV 평균 |
 | Valid (Batch 1 Hold-out) | 6.49 | 학습에 사용하지 않은 셀·프로토콜 |
 | Test (Batch 2) | 34.45 | Batch 2 평가 |
-| Gap (Train-Valid) | -1.93 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +27.97 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Train-Valid) | -1.93 | Valid − Train |
+| Gap (Valid-Test) | +27.97 | Test − Valid |
 | Gap (Target-Test) | +25.35 | Target: 원논문 9.1% |
 
 Gradient Boosting 300회의 Test MAPE는 32.67%로 가장 낮았으며, 논문 목표보다 23.57%p 높았다. 평균 앙상블은 33.71%로 단독 모델의 최저 오차를 개선하지 못했다. 상위 5개 설정 모두 Batch 1보다 Batch 2에서 오차가 크게 증가했다.
@@ -272,22 +272,67 @@ Gradient Boosting 300회의 Test MAPE는 32.67%로 가장 낮았으며, 논문 �
 
 상위 5개 중 4개는 단수명 셀이었고, 수명을 실제보다 길게 예측했다. Gradient Boosting의 단수명 그룹 MAPE는 39.03%, 그 외 그룹은 16.47%였다.
 
-### 원인 가설 및 개선 방향
+### 데이터 분포와 오차
 
-- 학습 데이터의 수명 범위는 534~1,227사이클인데, Batch 2의 30개 셀은 이 범위보다 짧았다. 학습하지 못한 단수명 영역에서 오차가 커진 것으로 보인다.
-- Batch 2의 32개 셀은 초기 mean_QD가 학습 범위를 벗어났다. 초기 용량·저항·ΔQ와 수명의 관계가 다른 배치로 그대로 이어지지 않은 것으로 보인다.
-- Ridge의 음수 예측과 높은 Hold-out 오차는 CV 점수만으로 모델의 안정성을 판단하기 어렵다는 점을 보여준다.
-- 개선 방향은 Batch별 측정 기준과 0으로 기록된 IR의 의미를 확인하고, 전압 곡선의 대응 관계와 용량의 상대 변화 피쳐를 검토하는 것이다. 새로운 처리 방법은 학습 데이터 안에서 결정하고 독립 데이터로 평가해야 한다.
-- 공개 논문의 데이터 제외·연속 측정 셀 처리·수명 정의를 확인해 데이터 품질 기준을 정리할 수 있다. 현재 실험에서는 테스트 오차를 줄이기 위한 임의 셀 제외나 예측값 보정을 하지 않았다.
+- 학습 데이터의 수명 범위는 534~1,227사이클이며, Batch 2의 30개 셀은 이 범위보다 짧았다.
+- Batch 2의 32개 셀은 초기 mean_QD가 학습 범위를 벗어났다.
+- Ridge의 CV MAPE는 7.64%, Hold-out MAPE는 26.66%, Batch 2 MAPE는 143.33%였다.
 
 ## ESS 도메인 해석
 
-### BESS 운영에서 활용 가능한 의사결정
+### BESS 운영 관점
 
-초기 측정으로 예상 수명이 짧은 셀을 선별하고, 추가 점검 대상이나 셀 조합 후보를 정하는 참고 자료로 활용할 수 있다. 수명 예측을 정비·교체 계획이나 충전 프로토콜 비교에 활용하는 것도 가능하다. 다만 현재 결과는 실험실 셀 데이터의 전체 수명 예측이므로, 실제 운전 중 남은 수명을 직접 계산한 결과는 아니다.
+이 모델은 초기 100사이클 데이터로 셀의 최종 전체 수명을 예측한다. 실험에서 Gradient Boosting의 절대 오차 상위 5개 셀 중 4개가 단수명 셀이었으며, 이들의 수명을 실제보다 길게 예측했다.
 
-### 한계와 실 배포에 필요한 내용
+### 한계
 
-이번 데이터는 고속 충전 조건의 LFP/흑연 셀 실험 데이터이며, 실제 BESS의 충방전 패턴과 장기간 보관에 따른 열화는 다를 수 있다. 현재는 배치가 바뀌면 오차가 크게 증가해 이 모델만으로 충전 제어나 교체를 자동 결정하기 어렵다.
+분석에는 고속 충전 조건의 LFP/흑연 셀 실험 데이터를 사용했다. 실제 BESS 운영 데이터에 대한 학습·평가는 진행하지 않았다. Batch 2 최저 MAPE는 32.67%로, Batch 1 Hold-out의 6.61%보다 높았다. 기본 실습의 모델 성능 평가는 Batch 2까지 진행했으며, Batch 3는 EDA에 사용했다.
 
-실제 BESS에서 사용하려면 운전 조건이 다른 독립 데이터, 실제 팩의 셀 간 편차, 온도와 충방전 이력, 달력 열화 데이터를 포함해 검증해야 한다. 예측 불확실성과 입력 데이터 이상도 함께 확인하고, 운영 판단은 기존 BMS의 안전 기준과 결합해야 한다. Batch 3 추가 평가와 원논문 데이터 품질 기준 검토도 후속 검증 대상으로 남아 있다.
+
+---
+
+## 별도 실험: 단수명 셀을 추가한 혼합 학습
+
+Batch 2의 단수명 셀 28개를 랜덤 시드 42로 14개씩 나누었다. 한쪽은 Batch 1에 추가해 학습하고, 나머지는 Batch 3에 추가해 테스트했다. 학습과 테스트의 셀은 중복되지 않는다. Batch 3에는 500사이클 미만 셀이 없다.
+
+| 구분 | 데이터 구성 | 셀 수 |
+| --- | --- | ---: |
+| Train | Batch 1 46개 + Batch 2 단수명 14개 | 60 |
+| Test | Batch 3 44개 + Batch 2의 나머지 단수명 14개 | 58 |
+
+초기 100사이클 피쳐를 사용하고, 학습 데이터에서 구한 기준 용량의 80~120% 범위를 벗어난 QD를 제외한 뒤 mean_QD와 std_QD를 다시 계산했다. 모델별 하이퍼파라미터는 기존 설정을 유지했다.
+
+### Random Forest 결과
+
+9개 모델 중 전체 Test MAPE가 가장 낮았던 모델은 Random Forest였다.
+
+| 평가 대상 | MAPE (%) |
+| --- | ---: |
+| 전체 테스트 58개 | 14.97 |
+| Batch 3 44개 | 16.15 |
+| Batch 2 단수명 14개 | 11.24 |
+
+전체 테스트의 MAE는 163.76사이클이었다. MAPE 14.97%는 실제 수명 대비 절대 백분율 오차의 평균이 약 15%라는 뜻이다.
+
+### 기존 학습 및 논문과 비교
+
+| 비교 대상 | Test MAPE (%) | 혼합 학습 결과와의 차이 (%p) |
+| --- | ---: | ---: |
+| 논문 목표 | 9.10 | 혼합 학습이 5.87 높음 |
+| 혼합 학습 Random Forest | 14.97 | — |
+| Batch 1만 학습한 Random Forest, 동일한 테스트 58개 | 25.65 | 혼합 학습이 10.68 낮음 |
+| 기존 QD 처리 Gradient Boosting, Batch 2의 39개 평가 | 31.31 | 혼합 학습이 16.34 낮음 |
+
+동일한 테스트 데이터에서 Random Forest의 MAPE는 25.65%에서 14.97%로 약 41.6% 감소했고, MAE는 214.11사이클에서 163.76사이클로 줄었다. Batch 2 단수명 그룹의 MAPE는 56.30%에서 11.24%로 감소했고, Batch 3의 MAPE는 15.89%에서 16.15%로 증가했다.
+
+이번 실험은 학습과 테스트에 서로 다른 Batch 2 셀이 포함된 혼합 구성이다. 기존 Batch 1 → Batch 2 평가 및 논문과는 데이터 분리가 다르므로, 위 수치 차이는 동일한 실험 조건의 성능 차이가 아니다.
+
+실행 파일: experiments/mixed_batches.py
+
+```bash
+python experiments/mixed_batches.py
+```
+
+## Contributor
+
+김태완
