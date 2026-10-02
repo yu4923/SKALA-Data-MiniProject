@@ -89,9 +89,6 @@ def main(context=None):
         plt.show()
 
     life_correlation = pd.DataFrame(correlation_records)
-    print('Summary 피쳐: 초기 1~100사이클 / ΔQ 피쳐: 100번-10번 사이클')
-    print('전류 피쳐: 앞에서 계산한 초기 10·50·100사이클 기준')
-    print('수명 결측 셀은 제외하며, 빨강은 양의 상관, 파랑은 음의 상관을 뜻합니다.')
 
     # 가장 강한 관계
     for batch_id in batch_ids:
@@ -104,7 +101,6 @@ def main(context=None):
         if not valid.empty:
             best = valid.iloc[0]
             print(f"가장 강한 선형 관계: {best['Feature']} (r={best['Pearson r']:.3f})")
-    print('양수: 피쳐가 높을수록 수명이 긴 경향 / 음수: 수명이 짧은 경향')
 
     # 다중공선성 후보
     threshold = 0.8
@@ -126,8 +122,6 @@ def main(context=None):
         print(f'Batch {batch_id} - |r| >= {threshold}')
         sub = multicollinearity_pairs[multicollinearity_pairs['batch_id'] == batch_id]
         display(sub.drop(columns='batch_id').sort_values('|r|', ascending=False).round(3))
-    print('높은 상관의 피쳐 쌍은 정보가 중복될 수 있어, 모델링 시 선택을 검토합니다.')
-    print('피쳐 간 상관은 다중공선성 후보를 찾는 기준이며, 여러 피쳐의 조합까지 확정하는 검사는 아닙니다.')
 
 if __name__ == '__main__':
     common.run_cli(main)

@@ -36,21 +36,21 @@ def main(context=None):
 
     # Outlier 필터링 후 열화 곡선
 
-    # 1. 정상 용량 범위 정의
+    # 용량 범위
     nominal = df[df['cycle'] <= 5].groupby(['batch_id', 'cell_id'])['QD'].median().median()
     lower = nominal * 0.80
     upper_qd = nominal * 1.20
     print(f"공칭 용량(nominal) : {nominal:.4f} Ah")
     print(f"필터 범위          : {lower:.4f} ~ {upper_qd:.4f} Ah")
 
-    # 2. 필터링
+    # 필터링
     df_clean = df[df['QD'].between(lower, upper_qd)].copy()
     for batch_id in batch_ids:
         n_all = (df['batch_id'] == batch_id).sum()
         n_clean = (df_clean['batch_id'] == batch_id).sum()
         print(f'Batch {batch_id}: 제거 {n_all - n_clean:,}행 ({(n_all-n_clean)/n_all*100:.2f}%)')
 
-    # 3. 시각화
+    # 시각화
     fig, axes = plt.subplots(1, len(batch_ids), figsize=(7 * len(batch_ids), 6),
                              squeeze=False, sharex=True, sharey=True, layout='constrained')
     for ax, batch_id in zip(axes.flat, batch_ids):

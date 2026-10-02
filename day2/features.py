@@ -22,11 +22,6 @@ def build_features(data_dir=None):
     context.cycle_life_df = cells
     context.df = loaded.df[loaded.df['cycle'].between(1, PREDICTION_CYCLE)].merge(
         observed, on=['batch_id', 'cell_id'], validate='many_to_one')
-    print(f'초기 {PREDICTION_CYCLE}사이클 → 전체 cycle_life 예측')
-    for batch_id in context.batch_ids:
-        total = (loaded.cycle_life_df['batch_id'] == batch_id).sum()
-        available = (cells['batch_id'] == batch_id).sum()
-        print(f'Batch {batch_id}: {available}개 사용 / {total-available}개 제외')
     columns = ['QD', 'QC', 'IR', 'Tmax', 'Tavg', 'Tmin', 'chargetime']
     early = context.df[context.df['cycle'].between(1, PREDICTION_CYCLE)].copy()
     early[columns] = early[columns].replace([np.inf, -np.inf], np.nan)

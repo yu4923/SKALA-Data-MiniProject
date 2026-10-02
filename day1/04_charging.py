@@ -110,7 +110,6 @@ def main(context=None):
         print(f'Batch {batch_id}')
         display(sub.sort_values('mean', ascending=False).round(2))
 
-    print('막대: 평균 수명 / 오차막대: 표준편차 / n: 수명 결측을 제외한 셀 수')
 
     charging_features = build_charging_features(context)
     fig, axes = plt.subplots(1, len(batch_ids), figsize=(7 * len(batch_ids), 5),
@@ -126,8 +125,6 @@ def main(context=None):
 
     fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=axes.ravel().tolist(), label='Cycle Life')
     plt.show()
-    print('10·50·100사이클의 양의 전류 중 0.1A 초과 구간을 충전으로 집계합니다.')
-    print('전류 평균과 표준편차는 측정 시간 간격으로 가중하며, 셀마다 한 점으로 표시합니다.')
 
     # 전체 구간 - 충전 전류 패턴과 열화 속도
     full_records = []
@@ -226,10 +223,6 @@ def main(context=None):
         fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label='Cycle Life')
         plt.show()
 
-    print('전류: 전체 사이클에서 0.1A 초과 충전 구간의 시간 가중 평균과 표준편차')
-    print('p95_current_A: 사이클별 시간 가중 95백분위 전류의 평균')
-    print('full_QD_loss: 전체 QD를 이동 중앙값으로 평활화한 뒤 구한 선형 감소 기울기')
-    print('전체 구간의 평균 열화 속도이며, 셀마다 관측된 사이클 범위는 다릅니다.')
 
 if __name__ == '__main__':
     common.run_cli(main)
