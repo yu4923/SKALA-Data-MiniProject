@@ -19,6 +19,21 @@ Gap은 각각 Valid − Train, Test − Valid, Test − Target으로 계산하�
 
 선형회귀는 Train과 Valid 모두 오차가 크게 나타났고, Batch 2에서는 더 크게 증가했다. 현재 구성에서는 수명을 제대로 예측하지 못했으며, 논문 Target인 9.1%에도 미치지 못했다.
 
+## Random Forest
+
+하이퍼파라미터 튜닝 없이 300개의 트리를 사용하는 Random Forest를 학습했다. 학습·검증 분리와 전처리는 선형회귀와 같은 기준을 사용했다.
+
+| 구분 | MAPE (%) | 비고 |
+| --- | ---: | --- |
+| Train (Batch 1 CV) | 8.61 | 5-fold CV 평균 |
+| Valid (Batch 1 Hold-out) | 7.55 | 학습에 사용하지 않은 셀·프로토콜 |
+| Test (Batch 2) | 39.93 | Batch 2 최종 평가 |
+| Gap (Train-Valid) | -1.06 | (+): 과적합 의심 |
+| Gap (Valid-Test) | +32.38 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Target-Test) | +30.83 | Target: 원논문 9.1% |
+
+Batch 1 내부 검증에서는 오차율이 낮았지만, Batch 2에서는 39.93%로 증가했다. 평균 절대 오차는 약 195사이클이며, 배치 간 일반화 차이가 나타났다.
+
 ---
 
 # DAY 1 - 배터리 수명 EDA
