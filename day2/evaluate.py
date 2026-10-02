@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_absolute_percentage_error
-from features import ROOT, build_features
+from features import ROOT, PREDICTION_CYCLE, build_features
 
 
 def evaluate():
@@ -25,6 +25,8 @@ def evaluate():
             artifact = pickle.load(file)
         if artifact['metadata'].get('report_version') != 2:
             raise ValueError(f'{path.name}: Hold-out 정보가 없습니다. 수정된 학습 파일로 다시 학습해주세요.')
+        if artifact['metadata'].get('prediction_cycle') != PREDICTION_CYCLE:
+            raise ValueError(f'{path.name}: 초기 100사이클 기준으로 다시 학습해주세요.')
         artifacts.append(artifact)
     best_name = min(artifacts, key=lambda a: a['metadata']['train_cv_mape'])['metadata']['model']
     features = build_features(args.data_dir)

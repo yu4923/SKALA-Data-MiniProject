@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import GroupShuffleSplit, GroupKFold
 from sklearn.metrics import mean_absolute_percentage_error
-from features import ROOT, build_features, input_columns
+from features import ROOT, PREDICTION_CYCLE, build_features, input_columns
 
 
 def make_pipeline(model, columns, categorical=False):
@@ -27,7 +27,7 @@ def make_pipeline(model, columns, categorical=False):
     return Pipeline([('preprocess', preprocess), ('model', model)])
 
 
-def train(name, make_model, categorical=False):
+def train(name, make_model, categorical=False, tuned_params=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-dir', type=Path)
     parser.add_argument('--models-dir', type=Path, default=ROOT / 'models')
@@ -61,7 +61,8 @@ def train(name, make_model, categorical=False):
     metadata = {
         'model': name, 'report_version': 2, 'train_batch': 1, 'batch1_cells': len(batch1),
         'train_cells': len(train_data), 'valid_cells': len(valid_data),
-        'target': 'cycle_life', 'summary_cycles': [1, 100], 'delta_cycles': [10, 100],
+        'target': 'cycle_life', 'prediction_cycle': PREDICTION_CYCLE,
+        'summary_cycles': [1, PREDICTION_CYCLE], 'delta_cycles': [10, 100],
         'current_cycles': [10, 50, 100], 'feature_columns': columns,
         'train_cv_mape': float(folds['MAPE (%)'].mean()),
         'train_cv_mape_std': float(folds['MAPE (%)'].std(ddof=0)),
@@ -72,7 +73,8 @@ def train(name, make_model, categorical=False):
         'valid_cell_ids': valid_data['cell_id'].astype(int).tolist(),
         'train_protocols': sorted(train_groups.unique().tolist()),
         'valid_protocols': sorted(valid_data['charging_policy'].unique().tolist()),
-        'hyperparameter_tuning': False, 'random_state': 42,
+        'hyperparameter_tuning': tuned_params is not None,
+        'tuned_params': tuned_params or {}, 'random_state': 42,
     }
     args.models_dir.mkdir(parents=True, exist_ok=True)
     with (args.models_dir / f'{name}.pkl').open('wb') as file:

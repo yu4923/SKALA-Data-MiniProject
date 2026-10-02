@@ -1,65 +1,71 @@
-# DAY 2 - 모델 학습 및 평가
+# DAY 2 - 초기 100사이클로 전체 수명 예측
+
+## 학습 및 평가 기준
+
+1~100사이클의 데이터만 입력으로 사용하고, 최종 전체 수명인 cycle_life를 Y로 예측했다. 용량·내부 저항·온도·충전 시간의 초기 구간 통계, ΔQ(V) = Q100(V) − Q10(V)의 분산과 최솟값, 10·50·100사이클의 충전 전류 통계와 충전 프로토콜을 사용했다. 100사이클 이후의 측정값과 cell_id, batch_id는 입력 피쳐에서 제외했다.
+
+100번째 사이클 데이터가 있는 셀만 사용하도록 확인했으며, 이번 데이터에서 이 기준으로 제외된 셀은 없었다. 수명이 있는 Batch 1의 46개 셀을 학습 35개와 Hold-out 검증 11개로 나누고, Batch 2의 39개 셀로 최종 평가했다.
+
+Hold-out은 충전 프로토콜별로 분리했다. Train 성능은 Hold-out을 제외한 학습 데이터에서 동일 프로토콜이 겹치지 않도록 나눈 5-fold CV의 평균이다. 전처리는 각 학습 구간에서 계산했고, 하이퍼파라미터는 Train CV MAPE로 선택했다. Batch 2 결과는 설정 선택에 사용하지 않았다.
+
+Gap은 각각 Valid − Train, Test − Valid, Test − Target으로 계산하며 단위는 %p이다. Target은 과제에서 제시한 원논문의 Regression MAPE 9.1%를 사용했다.
 
 ## 선형회귀
 
-cycle_life를 Y로 사용하고, 하이퍼파라미터 튜닝 없이 선형회귀를 학습했다. Batch 1의 46개 셀을 학습 35개와 Hold-out 검증 11개로 나누고, 수명이 있는 Batch 2의 39개 셀로 최종 평가했다.
-
-Hold-out은 충전 프로토콜별로 분리했으며, Train 성능은 Hold-out을 제외한 학습 데이터에서 동일 프로토콜이 겹치지 않도록 나눈 5-fold CV의 평균이다. 결측값 처리, 수치형 피쳐 표준화와 충전 프로토콜 인코딩은 각 학습 구간에서 계산했다.
+fit_intercept와 positive의 4개 조합을 비교했다. fit_intercept=False, positive=True가 CV 오차가 가장 작아 절편 없이 계수를 0 이상으로 제한하는 설정을 사용했다.
 
 | 구분 | MAPE (%) | 비고 |
 | --- | ---: | --- |
-| Train (Batch 1 CV) | 24,753.45 | 5-fold CV 평균 |
-| Valid (Batch 1 Hold-out) | 24,802.87 | 학습에 사용하지 않은 셀·프로토콜 |
-| Test (Batch 2) | 122,044.14 | Batch 2 최종 평가 |
-| Gap (Train-Valid) | +49.42 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +97,241.26 | (+): 배치 간 일반화 저하 의심 |
-| Gap (Target-Test) | +122,035.04 | Target: 원논문 9.1% |
+| Train (Batch 1 CV) | 86.35 | 5-fold CV 평균 |
+| Valid (Batch 1 Hold-out) | 124.18 | 학습에 사용하지 않은 셀·프로토콜 |
+| Test (Batch 2) | 166.51 | Batch 2 최종 평가 |
+| Gap (Train-Valid) | +37.83 | (+): 과적합 의심 |
+| Gap (Valid-Test) | +42.34 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Target-Test) | +157.41 | Target: 원논문 9.1% |
 
-Gap은 각각 Valid − Train, Test − Valid, Test − Target으로 계산하며 단위는 %p이다.
-
-선형회귀는 Train과 Valid 모두 오차가 크게 나타났고, Batch 2에서는 더 크게 증가했다. 현재 구성에서는 수명을 제대로 예측하지 못했으며, 논문 Target인 9.1%에도 미치지 못했다.
+기본 모델보다 오차가 크게 줄었지만, Test MAPE가 166.51%로 여전히 수명 예측 성능이 낮았다.
 
 ## Random Forest
 
-하이퍼파라미터 튜닝 없이 300개의 트리를 사용하는 Random Forest를 학습했다. 학습·검증 분리와 전처리는 선형회귀와 같은 기준을 사용했다.
+트리 수 100·300·600, 깊이 3·6·제한 없음, 리프 최소 샘플 수 1·3·5, 피쳐 비율 0.7·1.0의 54개 조합을 비교했다. n_estimators=100, max_depth=None, min_samples_leaf=1, max_features=0.7을 사용했다.
 
 | 구분 | MAPE (%) | 비고 |
 | --- | ---: | --- |
-| Train (Batch 1 CV) | 8.61 | 5-fold CV 평균 |
-| Valid (Batch 1 Hold-out) | 7.55 | 학습에 사용하지 않은 셀·프로토콜 |
-| Test (Batch 2) | 39.93 | Batch 2 최종 평가 |
-| Gap (Train-Valid) | -1.06 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +32.38 | (+): 배치 간 일반화 저하 의심 |
-| Gap (Target-Test) | +30.83 | Target: 원논문 9.1% |
+| Train (Batch 1 CV) | 8.29 | 5-fold CV 평균 |
+| Valid (Batch 1 Hold-out) | 7.74 | 학습에 사용하지 않은 셀·프로토콜 |
+| Test (Batch 2) | 43.11 | Batch 2 최종 평가 |
+| Gap (Train-Valid) | -0.55 | (+): 과적합 의심 |
+| Gap (Valid-Test) | +35.37 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Target-Test) | +34.01 | Target: 원논문 9.1% |
 
-Batch 1 내부 검증에서는 오차율이 낮았지만, Batch 2에서는 39.93%로 증가했다. 평균 절대 오차는 약 195사이클이며, 배치 간 일반화 차이가 나타났다.
+CV 오차는 개선됐지만 Test MAPE는 기본 모델의 39.93%에서 43.11%로 증가했다. 평균 절대 오차는 약 210사이클이었다.
 
 ## CatBoost
 
-하이퍼파라미터 튜닝 없이 고정 설정의 CatBoost를 학습했다. 충전 프로토콜은 범주형 피쳐로 사용하고, 학습·검증은 앞 모델과 같은 기준으로 분리했다.
+반복 수 300·600, 깊이 3·5·7, 학습률 0.03·0.1, 정규화 강도 3·10의 24개 조합과 기본 설정을 비교했다. iterations=600, depth=7, learning_rate=0.03, l2_leaf_reg=10을 사용했다.
 
 | 구분 | MAPE (%) | 비고 |
 | --- | ---: | --- |
-| Train (Batch 1 CV) | 9.01 | 5-fold CV 평균 |
-| Valid (Batch 1 Hold-out) | 7.80 | 학습에 사용하지 않은 셀·프로토콜 |
-| Test (Batch 2) | 55.58 | Batch 2 최종 평가 |
-| Gap (Train-Valid) | -1.21 | (+): 과적합 의심 |
-| Gap (Valid-Test) | +47.78 | (+): 배치 간 일반화 저하 의심 |
-| Gap (Target-Test) | +46.48 | Target: 원논문 9.1% |
+| Train (Batch 1 CV) | 8.39 | 5-fold CV 평균 |
+| Valid (Batch 1 Hold-out) | 7.64 | 학습에 사용하지 않은 셀·프로토콜 |
+| Test (Batch 2) | 51.58 | Batch 2 최종 평가 |
+| Gap (Train-Valid) | -0.75 | (+): 과적합 의심 |
+| Gap (Valid-Test) | +43.93 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Target-Test) | +42.48 | Target: 원논문 9.1% |
 
-Batch 1 내부 검증에서는 오차율이 낮았지만, Batch 2에서는 55.58%로 증가했다. 평균 절대 오차는 약 266사이클이며, Random Forest보다 테스트 오차가 크게 나타났다.
+Test MAPE는 기본 모델의 55.58%에서 51.58%로 약 4.00%p 감소했다. 평균 절대 오차는 약 249사이클이었다.
 
-## 기본 모델 비교
+## 기본 모델과 조정 후 비교
 
-모든 모델은 튜닝 없이 Batch 1에서 학습 35개와 Hold-out 검증 11개를 사용했으며, Batch 2의 39개 셀로 평가했다. 모델을 .pkl로 저장한 뒤 평가 코드에서 다시 불러오는 과정까지 확인했다.
+| 모델 | 기본 Test MAPE (%) | 조정 후 CV MAPE (%) | 조정 후 Valid MAPE (%) | 조정 후 Test MAPE (%) |
+| --- | ---: | ---: | ---: | ---: |
+| 선형회귀 | 122,044.14 | 86.35 | 124.18 | 166.51 |
+| Random Forest | 39.93 | 8.29 | 7.74 | 43.11 |
+| CatBoost | 55.58 | 8.39 | 7.64 | 51.58 |
 
-| 모델 | Train CV MAPE (%) | Valid MAPE (%) | Test MAPE (%) |
-| --- | ---: | ---: | ---: |
-| 선형회귀 | 24,753.45 | 24,802.87 | 122,044.14 |
-| Random Forest | 8.61 | 7.55 | 39.93 |
-| CatBoost | 9.01 | 7.80 | 55.58 |
+조정 후 모델은 Batch 1 CV를 기준으로 Random Forest가 선택됐으며, Batch 2에서도 조정 후 세 모델 중 오차가 가장 작았다. 다만 지금까지 평가한 전체 결과에서는 기본 Random Forest의 Test MAPE 39.93%가 가장 낮았다. CV 오차가 줄어도 다른 Batch의 예측 성능이 함께 좋아지지는 않았다.
 
-Batch 1 CV를 기준으로 Random Forest가 선택되었으며, Batch 2에서도 세 모델 중 오차가 가장 작았다. 현재 기본 모델의 테스트 성능은 원논문 Target인 9.1%보다 낮게 나타났다.
+선택한 설정으로 재학습하고 .pkl로 저장한 뒤, 평가 코드에서 다시 불러와 Batch 2 성능을 확인했다. 기존 기본 모델은 별도로 보존했다. Batch 3 추가 평가는 이번 결과에 포함하지 않았다.
 
 ---
 

@@ -1,10 +1,12 @@
 from pathlib import Path
 from importlib import import_module
+from types import SimpleNamespace
 import sys
 import h5py
 import numpy as np
 import pandas as pd
 
+PREDICTION_CYCLE = 100
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'day1'))
 common = import_module('00_data')
@@ -13,9 +15,20 @@ build_charging_features = import_module('04_charging').build_charging_features
 
 
 def build_features(data_dir=None):
-    context = common.get_context(data_dir or common.DATA_DIR)
+    loaded = common.get_context(data_dir or common.DATA_DIR)
+    observed = loaded.df.loc[loaded.df['cycle'] == PREDICTION_CYCLE, ['batch_id', 'cell_id']].drop_duplicates()
+    cells = loaded.cycle_life_df.merge(observed, on=['batch_id', 'cell_id'], validate='one_to_one')
+    context = SimpleNamespace(**vars(loaded))
+    context.cycle_life_df = cells
+    context.df = loaded.df[loaded.df['cycle'].between(1, PREDICTION_CYCLE)].merge(
+        observed, on=['batch_id', 'cell_id'], validate='many_to_one')
+    print(f'초기 {PREDICTION_CYCLE}사이클 → 전체 cycle_life 예측')
+    for batch_id in context.batch_ids:
+        total = (loaded.cycle_life_df['batch_id'] == batch_id).sum()
+        available = (cells['batch_id'] == batch_id).sum()
+        print(f'Batch {batch_id}: {available}개 사용 / {total-available}개 제외')
     columns = ['QD', 'QC', 'IR', 'Tmax', 'Tavg', 'Tmin', 'chargetime']
-    early = context.df[context.df['cycle'].between(1, 100)].copy()
+    early = context.df[context.df['cycle'].between(1, PREDICTION_CYCLE)].copy()
     early[columns] = early[columns].replace([np.inf, -np.inf], np.nan)
     features = early.groupby(['batch_id', 'cell_id']).agg(
         mean_QD=('QD', 'mean'), std_QD=('QD', 'std'), mean_QC=('QC', 'mean'),
