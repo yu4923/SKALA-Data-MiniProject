@@ -153,15 +153,13 @@ Batch별 수명과의 Pearson 상관계수 절댓값이 가장 큰 피쳐는 Bat
 
 ### 모델 선택 및 근거
 
-튜닝 설정은 Batch 1의 프로토콜별 5-fold CV로 선택했다. 아래 결과는 Batch 2 MAPE 순이며, 하이퍼파라미터가 다른 설정을 별도로 비교했다.
+배터리별로 정리한 데이터는 셀 수가 적고, 용량·내부 저항·온도·충전 전류의 수치형 피쳐와 충전 프로토콜의 범주형 피쳐가 함께 있다. 온도 피쳐 사이에는 높은 상관이 나타났고, 피쳐와 수명의 관계도 Batch별로 달랐다. 이러한 특성을 바탕으로 비선형 관계와 여러 피쳐의 조합을 학습하는 트리 모델을 비교했다. 충전 프로토콜은 One-hot Encoding으로 변환해 함께 사용했다.
 
-| 모델 / 설정 | 비교한 이유와 결과 |
+| 모델 | 모델 특징과 데이터에 대한 선택 근거 |
 | --- | --- |
-| Gradient Boosting — 300회 | 얕은 트리로 예측 오차를 반복해서 보완하며, 지금까지 Batch 2 오차가 가장 낮았다. |
-| LightGBM — 200회 | 리프 중심의 부스팅을 비교했으며, 300회보다 적은 반복으로 거의 같은 성능을 보였다. |
-| LightGBM — 300회 | 반복 횟수를 늘렸을 때의 효과를 비교했으며, 200회와 오차 차이가 매우 작았다. |
-| Gradient Boosting + LightGBM 평균 | 서로 다른 부스팅 모델의 예측이 보완되는지 비교했으며, 테스트한 앙상블 중 Batch 2 오차가 가장 낮았다. |
-| Gradient Boosting — 200회 | 반복 횟수를 줄여 비교했으며, 300회보다 CV와 Hold-out 오차는 낮았지만 Batch 2 오차는 높았다. |
+| Gradient Boosting | 앞선 모델의 예측 오차를 다음 트리가 보완하는 방식이다. 용량·저항·전류와 수명 사이의 비선형 관계를 학습하는 후보로 사용했다. 셀 수가 적은 데이터에서 복잡도를 조절할 수 있도록 얕은 트리를 사용하고 학습률과 반복 횟수를 비교했다. |
+| LightGBM | 리프 중심으로 트리를 확장하는 부스팅 모델이다. 여러 수치형 피쳐의 값에 따라 셀을 나누는 방식을 Gradient Boosting과 비교했다. 셀 수가 적으므로 리프 수와 리프별 최소 샘플 수를 조절하고, 반복 횟수도 함께 비교했다. |
+| Gradient Boosting + LightGBM 평균 | 트리를 만드는 방식이 다른 두 모델의 예측을 동일한 비중으로 평균한다. 같은 배터리 피쳐를 서로 다른 방식으로 학습한 예측을 조합하는 실험으로 사용했다. 별도의 결합 모델을 학습하지 않는 평균 방식을 적용했다. |
 
 ### 하이퍼파라미터 튜닝
 
@@ -185,7 +183,7 @@ MAPE는 실제 수명 대비 절대 백분율 오차의 평균으로, 낮을수�
 
 Gap은 Valid − Train, Test − Valid, Test − Target으로 계산하며, 단위는 %p이다. Target은 원논문 기준 9.1%를 사용했다.
 
-논문의 데이터 정리와 train/test 분리는 이번 Batch 1 → Batch 2 구성과 다르므로, Gap은 논문 수치와의 비교이다. [원논문](https://www.nature.com/articles/s41560-019-0356-8), [저자 데이터 처리 코드](https://github.com/rdbraatz/data-driven-prediction-of-battery-cycle-life-before-capacity-degradation/blob/master/LoadData.m)
+논문의 데이터 정리와 train/test 분리는 이번 Batch 1 → Batch 2 구성과 다르므로, Gap은 논문 수치와의 비교이다.
 
 ### Gradient Boosting — 300회
 
@@ -280,13 +278,15 @@ Gradient Boosting 300회의 Test MAPE는 32.67%로 가장 낮았으며, 논문 �
 
 ## ESS 도메인 해석
 
-### BESS 운영 관점
+사이클이 늘어날수록 방전 용량이 감소했고, 후반에는 감소 속도가 빨라졌다. 충방전을 반복하면서 배터리가 내보낼 수 있는 전하량이 줄어드는 모습을 확인할 수 있었다.
 
-이 모델은 초기 100사이클 데이터로 셀의 최종 전체 수명을 예측한다. 실험에서 Gradient Boosting의 절대 오차 상위 5개 셀 중 4개가 단수명 셀이었으며, 이들의 수명을 실제보다 길게 예측했다.
+단수명 그룹은 내부 저항이 높은 구간에 더 많이 분포했다. 같은 전류가 흐를 때 저항이 높으면 전압 강하 IR과 발열 I²R이 커지므로, 내부 저항이 높은 배터리는 손실과 발열 측면에서 불리할 수 있다. 충전 전류도 커질수록 저항성 발열이 증가하므로 전류, 저항, 온도를 함께 살펴봤다.
 
-### 한계
+ΔQ(V)에서는 단수명 셀의 음수 방향 변화가 큰 경향이 나타났다. 초기에도 전압별 용량 변화에 차이가 있었고, 이를 피쳐로 표현하기 위해 분산과 최솟값을 함께 사용했다.
 
-분석에는 고속 충전 조건의 LFP/흑연 셀 실험 데이터를 사용했다. 실제 BESS 운영 데이터에 대한 학습·평가는 진행하지 않았다. Batch 2 최저 MAPE는 32.67%로, Batch 1 Hold-out의 6.61%보다 높았다. 기본 실습의 모델 성능 평가는 Batch 2까지 진행했으며, Batch 3는 EDA에 사용했다.
+QD 이상값을 처리하자 Gradient Boosting의 오차가 32.67%에서 31.31%로 줄었다. 반면 초기 5사이클을 모두 제외했을 때는 오차가 늘어, 정상적인 초기 데이터까지 제거하는 것은 도움이 되지 않았다.
+
+Batch 1에는 단수명 셀이 없었고, 모델은 단수명 배터리의 수명을 길게 예측하는 경우가 많았다. 별도 실험에서 단수명 셀을 학습에 추가하자 Random Forest의 오차가 25.65%에서 14.97%로 줄었다. 이번 결과에서는 모델 튜닝뿐 아니라 다양한 수명의 배터리를 학습에 포함하는 것도 큰 영향을 줬다.
 
 
 ---
@@ -333,6 +333,11 @@ Batch 2의 단수명 셀 28개를 랜덤 시드 42로 14개씩 나누었다. 한
 python experiments/mixed_batches.py
 ```
 
-## Contributor
+## 작성자
 
 김태완
+
+## 참고문헌
+
+- Severson et al. (2019). [Data-driven prediction of battery cycle life before capacity degradation](https://www.nature.com/articles/s41560-019-0356-8). *Nature Energy*, 4, 383–391.
+- Severson et al. [논문 공개 데이터 처리 코드: LoadData.m](https://github.com/rdbraatz/data-driven-prediction-of-battery-cycle-life-before-capacity-degradation/blob/master/LoadData.m).
