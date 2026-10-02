@@ -2,3 +2,4 @@ numpy
 pandas
 h5py
 matplotlib>=3.6
+scikit-learn>=1.3

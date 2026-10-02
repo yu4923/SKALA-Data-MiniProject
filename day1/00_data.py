@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-DATA_DIR = Path(os.environ.get('ESS_DATA_DIR', Path(__file__).resolve().parent / 'data')).expanduser().resolve()
+DATA_DIR = Path(os.environ.get('ESS_DATA_DIR', Path(__file__).resolve().parent.parent / 'data')).expanduser().resolve()
 MAT_NAMES = [
     '2017-05-12_batchdata_updated_struct_errorcorrect.mat',
     '2018-02-20_batchdata_updated_struct_errorcorrect.mat',

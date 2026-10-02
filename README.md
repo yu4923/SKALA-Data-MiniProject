@@ -1,3 +1,26 @@
+# DAY 2 - 모델 학습 및 평가
+
+## 선형회귀
+
+cycle_life를 Y로 사용하고, 하이퍼파라미터 튜닝 없이 선형회귀를 학습했다. Batch 1의 46개 셀을 학습 35개와 Hold-out 검증 11개로 나누고, 수명이 있는 Batch 2의 39개 셀로 최종 평가했다.
+
+Hold-out은 충전 프로토콜별로 분리했으며, Train 성능은 Hold-out을 제외한 학습 데이터에서 동일 프로토콜이 겹치지 않도록 나눈 5-fold CV의 평균이다. 결측값 처리, 수치형 피쳐 표준화와 충전 프로토콜 인코딩은 각 학습 구간에서 계산했다.
+
+| 구분 | MAPE (%) | 비고 |
+| --- | ---: | --- |
+| Train (Batch 1 CV) | 24,753.45 | 5-fold CV 평균 |
+| Valid (Batch 1 Hold-out) | 24,802.87 | 학습에 사용하지 않은 셀·프로토콜 |
+| Test (Batch 2) | 122,044.14 | Batch 2 최종 평가 |
+| Gap (Train-Valid) | +49.42 | (+): 과적합 의심 |
+| Gap (Valid-Test) | +97,241.26 | (+): 배치 간 일반화 저하 의심 |
+| Gap (Target-Test) | +122,035.04 | Target: 원논문 9.1% |
+
+Gap은 각각 Valid − Train, Test − Valid, Test − Target으로 계산하며 단위는 %p이다.
+
+선형회귀는 Train과 Valid 모두 오차가 크게 나타났고, Batch 2에서는 더 크게 증가했다. 현재 구성에서는 수명을 제대로 예측하지 못했으며, 논문 Target인 9.1%에도 미치지 못했다.
+
+---
+
 # DAY 1 - 배터리 수명 EDA
 
 ## Dataset
